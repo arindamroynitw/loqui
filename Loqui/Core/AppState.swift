@@ -36,7 +36,7 @@ class AppState: ObservableObject {
     private var audioBuffer: Data = Data()
 
     // MARK: - Transcription (Phase 3)
-    // private var transcriptionEngine: TranscriptionEngine?
+    private var transcriptionEngine: TranscriptionEngine?
 
     // MARK: - LLM (Phase 4)
     // private var speechCleaner: SpeechCleaner?
@@ -145,17 +145,26 @@ class AppState: ObservableObject {
     // MARK: - Model Initialization (Phase 3)
     func initializeModels() async {
         statusText = "Loading models..."
-        print("📦 AppState: Model initialization (stub for Phase 3)")
+        print("📦 AppState: Initializing models...")
 
-        // TODO Phase 3: Initialize Whisper
-        // transcriptionEngine = TranscriptionEngine()
-        // try await transcriptionEngine?.initialize()
+        do {
+            // Phase 3: Initialize Whisper
+            transcriptionEngine = TranscriptionEngine()
+            try await transcriptionEngine?.initialize()
 
-        // TODO Phase 4: Initialize LLM
-        // speechCleaner = SpeechCleaner()
-        // try await speechCleaner?.initialize()
+            currentModel = "distil-large-v3 (594MB)"
+            print("✅ AppState: Whisper model loaded")
 
-        currentModel = "Models not loaded (Phase 1)"
+            // TODO Phase 4: Initialize LLM
+            // speechCleaner = SpeechCleaner()
+            // try await speechCleaner?.initialize()
+
+        } catch {
+            LoquiLogger.shared.logError(error, context: "Model initialization")
+            print("❌ AppState: Model initialization failed: \(error)")
+            currentModel = "Model load failed"
+        }
+
         statusText = "Idle"
     }
 
@@ -176,9 +185,11 @@ class AppState: ObservableObject {
 
             print("✅ AppState: Speech detected, \(trimmedAudio.count) bytes after trimming")
 
-            // TODO Phase 3: Transcription
-            // let rawText = try await transcriptionEngine?.transcribe(trimmedAudio)
-            // print("📝 Transcription: \(rawText)")
+            // Phase 3: Transcription
+            guard let rawText = try await transcriptionEngine?.transcribe(trimmedAudio) else {
+                throw TranscriptionError.notInitialized
+            }
+            print("📝 Transcription: '\(rawText)'")
 
             // TODO Phase 4: LLM cleanup (with fallback)
             // var finalText = rawText
@@ -189,8 +200,8 @@ class AppState: ObservableObject {
             // TODO Phase 5: Insert text
             // textInserter?.insertText(finalText)
 
-            // For Phase 2, just return to idle
-            print("✅ AppState: Phase 2 complete - audio captured and analyzed")
+            // For Phase 3, just log the transcription
+            print("✅ AppState: Phase 3 complete - transcription: '\(rawText)'")
 
         } catch {
             LoquiLogger.shared.logError(error, context: "Recording processing")

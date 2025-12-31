@@ -23,10 +23,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Start fn key monitoring
         appState?.startKeyMonitoring()
 
-        // TODO Phase 3: Initialize models in background
-        // Task {
-        //     await appState?.initializeModels()
-        // }
+        // Phase 3: Initialize models in background
+        Task {
+            await appState?.initializeModels()
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
