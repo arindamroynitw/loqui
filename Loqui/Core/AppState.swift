@@ -181,10 +181,16 @@ class AppState: ObservableObject {
 
     // MARK: - Processing Pipeline (Phase 2-5)
     private func processRecording() async {
+        let pipelineStart = Date()
+        print("⏱️  [0.00s] Pipeline started")
+
         do {
             // Phase 2: VAD analysis
+            let vadStart = Date()
             let vadProcessor = try await VADProcessor()
             let vadResult = try await vadProcessor.analyzeRecording(audioBuffer)
+            let vadTime = Date().timeIntervalSince(vadStart)
+            print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] VAD complete (\(String(format: "%.2f", vadTime))s)")
 
             guard case .speech(let trimmedAudio) = vadResult else {
                 print("❌ AppState: No speech detected")
@@ -197,23 +203,36 @@ class AppState: ObservableObject {
             print("✅ AppState: Speech detected, \(trimmedAudio.count) bytes after trimming")
 
             // Phase 3: Transcription
+            let whisperStart = Date()
+            print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] Whisper transcription started")
             guard let rawText = try await transcriptionEngine?.transcribe(trimmedAudio) else {
                 throw TranscriptionError.notInitialized
             }
+            let whisperTime = Date().timeIntervalSince(whisperStart)
+            print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] Whisper complete (\(String(format: "%.2f", whisperTime))s)")
             print("📝 Transcription: '\(rawText)'")
 
             // Phase 4: LLM cleanup (with fallback to raw transcription)
+            let llmStart = Date()
+            print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM cleanup started")
             var finalText = rawText
             if let cleanedText = try? await speechCleaner?.clean(rawText) {
                 finalText = cleanedText
+                let llmTime = Date().timeIntervalSince(llmStart)
+                print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM complete (\(String(format: "%.2f", llmTime))s)")
                 print("✨ LLM Cleaned: '\(rawText)' → '\(finalText)'")
             } else {
+                let llmTime = Date().timeIntervalSince(llmStart)
+                print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM failed (\(String(format: "%.2f", llmTime))s)")
                 print("⚠️  LLM cleanup failed, using raw transcription")
             }
 
             // Phase 5: Insert text
+            let insertStart = Date()
             do {
                 try textInserter?.insertText(finalText)
+                let insertTime = Date().timeIntervalSince(insertStart)
+                print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] Text insertion complete (\(String(format: "%.3f", insertTime))s)")
                 print("✅ AppState: Text inserted successfully")
             } catch {
                 LoquiLogger.shared.logError(error, context: "Text insertion")
@@ -222,6 +241,8 @@ class AppState: ObservableObject {
                 // For now, just log the error
             }
 
+            let totalTime = Date().timeIntervalSince(pipelineStart)
+            print("⏱️  ⏱️  ⏱️  TOTAL PIPELINE LATENCY: \(String(format: "%.2f", totalTime))s")
             print("✅ AppState: Phase 5 complete - final text: '\(finalText)'")
 
         } catch {

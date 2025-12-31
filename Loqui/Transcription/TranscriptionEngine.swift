@@ -25,6 +25,21 @@ class TranscriptionEngine {
         )
 
         print("✅ TranscriptionEngine: WhisperKit initialized with distil-large-v3")
+
+        // Pre-load the model by transcribing 0.1s of silence
+        // This prevents 130s lazy-load delay on first real transcription
+        print("📦 TranscriptionEngine: Pre-loading model...")
+        let silentAudio = [Float](repeating: 0.0, count: 1600)  // 0.1s at 16kHz
+        let options = DecodingOptions(
+            task: .transcribe,
+            language: "en",
+            temperature: 0.0,
+            usePrefillCache: true,
+            skipSpecialTokens: true,
+            wordTimestamps: false
+        )
+        _ = try? await whisperKit?.transcribe(audioArray: silentAudio, decodeOptions: options)
+        print("✅ TranscriptionEngine: Model pre-loaded and ready")
     }
 
     /// Transcribe audio data to text
