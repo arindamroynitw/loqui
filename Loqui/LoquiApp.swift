@@ -24,10 +24,9 @@ struct LoquiApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        // Settings window (placeholder for Phase 5)
+        // Settings window
         Settings {
-            Text("Settings")
-                .frame(width: 500, height: 300)
+            SettingsView()
         }
 
         // Permission wizard window

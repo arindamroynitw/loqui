@@ -38,8 +38,9 @@ class AppState: ObservableObject {
     // MARK: - Transcription (Phase 3)
     private var transcriptionEngine: TranscriptionEngine?
 
-    // MARK: - LLM (Phase 4)
-    private var speechCleaner: SpeechCleaner?
+    // MARK: - LLM (Phase 4 - Cloud API)
+    private var groqClient: GroqClient?
+    private var errorOverlayController: ErrorOverlayController?
 
     // MARK: - Text Insertion (Phase 5)
     private var textInserter: TextInserter?
@@ -82,6 +83,13 @@ class AppState: ObservableObject {
         guard case .idle = currentState else {
             print("⚠️  AppState: Cannot start recording - currently \(currentState)")
             // TODO: Show notification "Still processing previous transcription"
+            return
+        }
+
+        // Check if Groq API key is configured
+        if groqClient == nil {
+            print("⚠️  AppState: No API key configured")
+            showAPIKeyRequiredAlert()
             return
         }
 
@@ -163,12 +171,15 @@ class AppState: ObservableObject {
             currentModel = "distil-large-v3 (594MB)"
             print("✅ AppState: Whisper model loaded")
 
-            // Phase 4: Initialize LLM
-            speechCleaner = SpeechCleaner()
-            try await speechCleaner?.initialize()
-
-            currentModel = "Whisper + Qwen3-4B (~5.5GB)"
-            print("✅ AppState: LLM model loaded")
+            // Phase 4: Initialize Cloud LLM
+            if let apiKey = UserDefaults.standard.string(forKey: "groqAPIKey"), !apiKey.isEmpty {
+                groqClient = GroqClient(apiKey: apiKey)
+                currentModel = "Whisper + Groq Cloud LLM"
+                print("✅ AppState: Groq client initialized")
+            } else {
+                currentModel = "Whisper (No LLM - Configure API key in Settings)"
+                print("⚠️  AppState: No Groq API key configured")
+            }
 
         } catch {
             LoquiLogger.shared.logError(error, context: "Model initialization")
@@ -212,19 +223,35 @@ class AppState: ObservableObject {
             print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] Whisper complete (\(String(format: "%.2f", whisperTime))s)")
             print("📝 Transcription: '\(rawText)'")
 
-            // Phase 4: LLM cleanup (with fallback to raw transcription)
+            // Phase 4: Cloud LLM cleanup (with fallback to raw transcription)
             let llmStart = Date()
             print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM cleanup started")
             var finalText = rawText
-            if let cleanedText = try? await speechCleaner?.clean(rawText) {
-                finalText = cleanedText
-                let llmTime = Date().timeIntervalSince(llmStart)
-                print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM complete (\(String(format: "%.2f", llmTime))s)")
-                print("✨ LLM Cleaned: '\(rawText)' → '\(finalText)'")
+            var cleanupFailed = false
+
+            if let groqClient = groqClient {
+                do {
+                    finalText = try await groqClient.cleanTranscript(rawText)
+                    let llmTime = Date().timeIntervalSince(llmStart)
+                    print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM complete (\(String(format: "%.2f", llmTime))s)")
+                    print("✨ LLM Cleaned: '\(rawText)' → '\(finalText)'")
+                } catch let error as LLMError {
+                    let llmTime = Date().timeIntervalSince(llmStart)
+                    print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM failed (\(String(format: "%.2f", llmTime))s)")
+                    print("⚠️  LLM cleanup failed: \(error.localizedDescription)")
+                    print("⚠️  Using raw transcription as fallback")
+                    cleanupFailed = error.shouldShowOverlay
+                } catch {
+                    let llmTime = Date().timeIntervalSince(llmStart)
+                    print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM failed (\(String(format: "%.2f", llmTime))s)")
+                    print("⚠️  LLM cleanup failed: \(error)")
+                    print("⚠️  Using raw transcription as fallback")
+                    cleanupFailed = true
+                }
             } else {
                 let llmTime = Date().timeIntervalSince(llmStart)
-                print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM failed (\(String(format: "%.2f", llmTime))s)")
-                print("⚠️  LLM cleanup failed, using raw transcription")
+                print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM skipped (no API key) (\(String(format: "%.2f", llmTime))s)")
+                print("⚠️  No Groq client configured, using raw transcription")
             }
 
             // Phase 5: Insert text
@@ -239,6 +266,14 @@ class AppState: ObservableObject {
                 print("❌ AppState: Text insertion failed: \(error)")
                 // TODO Phase 5: Show error notification to user
                 // For now, just log the error
+            }
+
+            // Show error overlay if cleanup failed (after text insertion completes)
+            if cleanupFailed {
+                Task { @MainActor in
+                    errorOverlayController = ErrorOverlayController()
+                    errorOverlayController?.show()
+                }
             }
 
             let totalTime = Date().timeIntervalSince(pipelineStart)
@@ -261,6 +296,18 @@ class AppState: ObservableObject {
         currentState = .idle
         statusText = "Idle"
         print("🔄 AppState: Returned to idle state")
+    }
+
+    // MARK: - Helper Functions
+    private func showAPIKeyRequiredAlert() {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "API Key Required"
+            alert.informativeText = "Please configure your Groq API key in Settings (Cmd+,) before using Loqui."
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+        }
     }
 
     // MARK: - Cleanup
