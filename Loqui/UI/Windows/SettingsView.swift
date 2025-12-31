@@ -25,7 +25,7 @@ struct SettingsView: View {
                 }
                 .tag(1)
         }
-        .frame(width: 500, height: 350)
+        .frame(width: 500, height: 450)
     }
 }
 
@@ -51,7 +51,9 @@ struct GeneralSettingsView: View {
 /// LLM API settings tab
 struct LLMSettingsView: View {
     @AppStorage("groqAPIKey") private var groqAPIKey: String = ""
+    @AppStorage("openaiAPIKey") private var openaiAPIKey: String = ""
     @State private var tempGroqKey: String = ""
+    @State private var tempOpenAIKey: String = ""
     @State private var hasChanges: Bool = false
 
     var body: some View {
@@ -67,7 +69,7 @@ struct LLMSettingsView: View {
                 Text("Primary Provider: Groq")
                     .font(.headline)
 
-                Text("Fast, free inference using Llama 3.1 70B")
+                Text("Fast, free inference using Llama 3.3 70B (~300ms)")
                     .font(.caption)
                     .foregroundColor(.secondary)
 
@@ -78,6 +80,27 @@ struct LLMSettingsView: View {
                     }
 
                 Link("Get Groq API Key →", destination: URL(string: "https://console.groq.com")!)
+                    .font(.caption)
+            }
+
+            Divider()
+
+            // OpenAI API Key Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Fallback Provider: OpenAI")
+                    .font(.headline)
+
+                Text("Reliable fallback using GPT-4o-mini (~500ms)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                SecureField("API Key", text: $tempOpenAIKey)
+                    .textFieldStyle(.roundedBorder)
+                    .onChange(of: tempOpenAIKey) { _, _ in
+                        hasChanges = true
+                    }
+
+                Link("Get OpenAI API Key →", destination: URL(string: "https://platform.openai.com/api-keys")!)
                     .font(.caption)
             }
 
@@ -100,8 +123,9 @@ struct LLMSettingsView: View {
                 Spacer()
 
                 Button("Cancel") {
-                    // Reset to saved value
+                    // Reset to saved values
                     tempGroqKey = groqAPIKey
+                    tempOpenAIKey = openaiAPIKey
                     hasChanges = false
                     closeWindow()
                 }
@@ -109,6 +133,7 @@ struct LLMSettingsView: View {
 
                 Button("Save") {
                     groqAPIKey = tempGroqKey
+                    openaiAPIKey = tempOpenAIKey
                     hasChanges = false
                     closeWindow()
                 }
@@ -118,8 +143,9 @@ struct LLMSettingsView: View {
         }
         .padding(20)
         .onAppear {
-            // Load saved value on appear
+            // Load saved values on appear
             tempGroqKey = groqAPIKey
+            tempOpenAIKey = openaiAPIKey
         }
     }
 

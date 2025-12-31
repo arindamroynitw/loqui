@@ -40,6 +40,7 @@ class AppState: ObservableObject {
 
     // MARK: - LLM (Phase 4 - Cloud API)
     private var groqClient: GroqClient?
+    private var openaiClient: OpenAIClient?
     private var errorOverlayController: ErrorOverlayController?
 
     // MARK: - Text Insertion (Phase 5)
@@ -172,13 +173,28 @@ class AppState: ObservableObject {
             print("✅ AppState: Whisper model loaded")
 
             // Phase 4: Initialize Cloud LLM
+            var llmProviders: [String] = []
+
             if let apiKey = UserDefaults.standard.string(forKey: "groqAPIKey"), !apiKey.isEmpty {
                 groqClient = GroqClient(apiKey: apiKey)
-                currentModel = "Whisper + Groq Cloud LLM"
+                llmProviders.append("Groq")
                 print("✅ AppState: Groq client initialized")
             } else {
-                currentModel = "Whisper (No LLM - Configure API key in Settings)"
                 print("⚠️  AppState: No Groq API key configured")
+            }
+
+            if let apiKey = UserDefaults.standard.string(forKey: "openaiAPIKey"), !apiKey.isEmpty {
+                openaiClient = OpenAIClient(apiKey: apiKey)
+                llmProviders.append("OpenAI")
+                print("✅ AppState: OpenAI client initialized")
+            } else {
+                print("⚠️  AppState: No OpenAI API key configured")
+            }
+
+            if !llmProviders.isEmpty {
+                currentModel = "Whisper + \(llmProviders.joined(separator: " + "))"
+            } else {
+                currentModel = "Whisper (No LLM - Configure API key in Settings)"
             }
 
         } catch {
@@ -223,35 +239,88 @@ class AppState: ObservableObject {
             print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] Whisper complete (\(String(format: "%.2f", whisperTime))s)")
             print("📝 Transcription: '\(rawText)'")
 
-            // Phase 4: Cloud LLM cleanup (with fallback to raw transcription)
+            // Phase 4: Cloud LLM cleanup (with OpenAI fallback)
             let llmStart = Date()
             print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM cleanup started")
             var finalText = rawText
             var cleanupFailed = false
+            var usedProvider: String?
 
+            // Try Groq first (primary provider)
             if let groqClient = groqClient {
                 do {
                     finalText = try await groqClient.cleanTranscript(rawText)
                     let llmTime = Date().timeIntervalSince(llmStart)
-                    print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM complete (\(String(format: "%.2f", llmTime))s)")
+                    print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM complete (Groq: \(String(format: "%.2f", llmTime))s)")
                     print("✨ LLM Cleaned: '\(rawText)' → '\(finalText)'")
+                    usedProvider = "Groq"
                 } catch let error as LLMError {
                     let llmTime = Date().timeIntervalSince(llmStart)
-                    print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM failed (\(String(format: "%.2f", llmTime))s)")
-                    print("⚠️  LLM cleanup failed: \(error.localizedDescription)")
-                    print("⚠️  Using raw transcription as fallback")
-                    cleanupFailed = error.shouldShowOverlay
+                    print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] Groq failed (\(String(format: "%.2f", llmTime))s)")
+                    print("⚠️  Groq cleanup failed: \(error.localizedDescription)")
+
+                    // Try OpenAI fallback
+                    if let openaiClient = openaiClient {
+                        print("🔷 Attempting OpenAI fallback...")
+                        let openaiStart = Date()
+                        do {
+                            finalText = try await openaiClient.cleanTranscript(rawText)
+                            let openaiTime = Date().timeIntervalSince(openaiStart)
+                            print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM complete (OpenAI: \(String(format: "%.2f", openaiTime))s)")
+                            print("✨ LLM Cleaned (OpenAI fallback): '\(rawText)' → '\(finalText)'")
+                            usedProvider = "OpenAI"
+                        } catch {
+                            print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] OpenAI also failed")
+                            print("⚠️  Both providers failed, using raw transcription")
+                            cleanupFailed = true
+                        }
+                    } else {
+                        print("⚠️  No OpenAI fallback available, using raw transcription")
+                        cleanupFailed = error.shouldShowOverlay
+                    }
                 } catch {
                     let llmTime = Date().timeIntervalSince(llmStart)
-                    print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM failed (\(String(format: "%.2f", llmTime))s)")
-                    print("⚠️  LLM cleanup failed: \(error)")
-                    print("⚠️  Using raw transcription as fallback")
+                    print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] Groq failed (\(String(format: "%.2f", llmTime))s)")
+                    print("⚠️  Groq cleanup failed: \(error)")
+
+                    // Try OpenAI fallback
+                    if let openaiClient = openaiClient {
+                        print("🔷 Attempting OpenAI fallback...")
+                        let openaiStart = Date()
+                        do {
+                            finalText = try await openaiClient.cleanTranscript(rawText)
+                            let openaiTime = Date().timeIntervalSince(openaiStart)
+                            print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM complete (OpenAI: \(String(format: "%.2f", openaiTime))s)")
+                            print("✨ LLM Cleaned (OpenAI fallback): '\(rawText)' → '\(finalText)'")
+                            usedProvider = "OpenAI"
+                        } catch {
+                            print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] OpenAI also failed")
+                            print("⚠️  Both providers failed, using raw transcription")
+                            cleanupFailed = true
+                        }
+                    } else {
+                        print("⚠️  No OpenAI fallback available, using raw transcription")
+                        cleanupFailed = true
+                    }
+                }
+            } else if let openaiClient = openaiClient {
+                // No Groq, try OpenAI directly
+                print("⚠️  No Groq client configured, trying OpenAI...")
+                do {
+                    finalText = try await openaiClient.cleanTranscript(rawText)
+                    let llmTime = Date().timeIntervalSince(llmStart)
+                    print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM complete (OpenAI: \(String(format: "%.2f", llmTime))s)")
+                    print("✨ LLM Cleaned: '\(rawText)' → '\(finalText)'")
+                    usedProvider = "OpenAI"
+                } catch {
+                    print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] OpenAI failed")
+                    print("⚠️  OpenAI cleanup failed, using raw transcription")
                     cleanupFailed = true
                 }
             } else {
                 let llmTime = Date().timeIntervalSince(llmStart)
-                print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM skipped (no API key) (\(String(format: "%.2f", llmTime))s)")
-                print("⚠️  No Groq client configured, using raw transcription")
+                print("⏱️  [\(String(format: "%.2f", Date().timeIntervalSince(pipelineStart)))s] LLM skipped (no API keys) (\(String(format: "%.2f", llmTime))s)")
+                print("⚠️  No LLM clients configured, using raw transcription")
             }
 
             // Phase 5: Insert text
