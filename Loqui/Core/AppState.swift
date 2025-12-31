@@ -28,6 +28,11 @@ class AppState: ObservableObject {
     @Published var statusText: String = "Idle"
     @Published var currentModel: String = "Not loaded"
 
+    // MARK: - Computed Properties
+    var hasAPIKeys: Bool {
+        groqClient != nil || openaiClient != nil
+    }
+
     // MARK: - Core Components
     private var fnKeyMonitor: FnKeyMonitor?
 
@@ -45,7 +50,7 @@ class AppState: ObservableObject {
 
     // MARK: - Text Insertion (Phase 5)
     private var textInserter: TextInserter?
-    private var hudWindow: HUDWindowController?
+    private var floater: FloaterWindowController?
 
     // MARK: - Initialization
     private init() {
@@ -87,9 +92,9 @@ class AppState: ObservableObject {
             return
         }
 
-        // Check if Groq API key is configured
-        if groqClient == nil {
-            print("⚠️  AppState: No API key configured")
+        // Check if any API key is configured
+        if !hasAPIKeys {
+            print("⚠️  AppState: No API keys configured")
             showAPIKeyRequiredAlert()
             return
         }
@@ -122,16 +127,12 @@ class AppState: ObservableObject {
             return
         }
 
-        // Phase 5: Initialize text inserter and show HUD
+        // Phase 5: Initialize text inserter
         if textInserter == nil {
             textInserter = TextInserter()
         }
 
-        // Show HUD with recording start time
-        if case .recording(let startTime) = currentState {
-            hudWindow = HUDWindowController(startTime: startTime)
-            hudWindow?.show()
-        }
+        // Floater automatically updates via state observation
     }
 
     func stopRecording() {
@@ -145,9 +146,7 @@ class AppState: ObservableObject {
         // Phase 2: Stop audio capture
         audioCapture?.stopCapture()
 
-        // Phase 5: Hide HUD window
-        hudWindow?.hide()
-        hudWindow = nil
+        // Floater automatically updates via state observation
 
         // Transition to processing state
         currentState = .processing
@@ -201,6 +200,16 @@ class AppState: ObservableObject {
             LoquiLogger.shared.logError(error, context: "Model initialization")
             print("❌ AppState: Model initialization failed: \(error)")
             currentModel = "Model load failed"
+        }
+
+        // Initialize persistent floater (Siri-style animated UI)
+        floater = FloaterWindowController()
+        floater?.show()
+
+        // Set gray disabled state if no API keys configured
+        if !hasAPIKeys {
+            floater?.setDisabled()
+            print("⚠️  AppState: Floater set to disabled (gray) state - no API keys")
         }
 
         statusText = "Idle"
