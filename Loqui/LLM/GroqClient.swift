@@ -14,7 +14,7 @@ class GroqClient {
     private let apiKey: String
     private let endpoint = "https://api.groq.com/openai/v1/chat/completions"
     private let timeout: TimeInterval = 5.0
-    private let model = "llama-3.1-70b-versatile"
+    private let model = "llama-3.3-70b-versatile"
 
     // Fixed cleanup prompt (from spec)
     private let systemPrompt = """
