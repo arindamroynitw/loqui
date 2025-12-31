@@ -63,7 +63,7 @@ class TranscriptionEngine {
         }
 
         let timeoutTask = Task {
-            try await Task.sleep(nanoseconds: 30_000_000_000)  // 30 seconds
+            try await Task.sleep(nanoseconds: 180_000_000_000)  // 180 seconds (3 minutes)
             transcriptionTask.cancel()
         }
 

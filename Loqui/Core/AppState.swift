@@ -42,8 +42,8 @@ class AppState: ObservableObject {
     private var speechCleaner: SpeechCleaner?
 
     // MARK: - Text Insertion (Phase 5)
-    // private var textInserter: TextInserter?
-    // private var hudWindow: HUDWindowController?
+    private var textInserter: TextInserter?
+    private var hudWindow: HUDWindowController?
 
     // MARK: - Initialization
     private init() {
@@ -113,9 +113,16 @@ class AppState: ObservableObject {
             return
         }
 
-        // TODO Phase 5: Show HUD window
-        // hudWindow = HUDWindowController()
-        // hudWindow?.show()
+        // Phase 5: Initialize text inserter and show HUD
+        if textInserter == nil {
+            textInserter = TextInserter()
+        }
+
+        // Show HUD with recording start time
+        if case .recording(let startTime) = currentState {
+            hudWindow = HUDWindowController(startTime: startTime)
+            hudWindow?.show()
+        }
     }
 
     func stopRecording() {
@@ -129,8 +136,9 @@ class AppState: ObservableObject {
         // Phase 2: Stop audio capture
         audioCapture?.stopCapture()
 
-        // TODO Phase 5: Hide HUD window
-        // hudWindow?.hide()
+        // Phase 5: Hide HUD window
+        hudWindow?.hide()
+        hudWindow = nil
 
         // Transition to processing state
         currentState = .processing
@@ -203,23 +211,35 @@ class AppState: ObservableObject {
                 print("⚠️  LLM cleanup failed, using raw transcription")
             }
 
-            // TODO Phase 5: Insert text
-            // textInserter?.insertText(finalText)
+            // Phase 5: Insert text
+            do {
+                try textInserter?.insertText(finalText)
+                print("✅ AppState: Text inserted successfully")
+            } catch {
+                LoquiLogger.shared.logError(error, context: "Text insertion")
+                print("❌ AppState: Text insertion failed: \(error)")
+                // TODO Phase 5: Show error notification to user
+                // For now, just log the error
+            }
 
-            // For Phase 4, log the final text
-            print("✅ AppState: Phase 4 complete - final text: '\(finalText)'")
+            print("✅ AppState: Phase 5 complete - final text: '\(finalText)'")
 
         } catch {
             LoquiLogger.shared.logError(error, context: "Recording processing")
             print("❌ AppState: Processing error: \(error)")
             currentState = .error(error)
             statusText = "Error"
-            return
+
+            // TODO Phase 5: Show error notification to user
+
+            // Return to idle after 2 seconds so user can try again
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
         }
 
-        // Return to idle
+        // Always return to idle (either after success or after error delay)
         currentState = .idle
         statusText = "Idle"
+        print("🔄 AppState: Returned to idle state")
     }
 
     // MARK: - Cleanup
