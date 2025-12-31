@@ -52,13 +52,10 @@ struct MenuBarContentView: View {
     }
 
     private func openSettings() {
-        // TODO Phase 5: Open Settings window
-        print("⚙️  Opening Settings... (TODO)")
+        print("⚙️  Opening Settings...")
 
-        // For now, just open System Settings to Privacy
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security") {
-            NSWorkspace.shared.open(url)
-        }
+        // Open the app's Settings window using standard macOS method
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 
     private func openAbout() {
