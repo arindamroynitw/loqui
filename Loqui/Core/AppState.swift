@@ -39,7 +39,7 @@ class AppState: ObservableObject {
     private var transcriptionEngine: TranscriptionEngine?
 
     // MARK: - LLM (Phase 4)
-    // private var speechCleaner: SpeechCleaner?
+    private var speechCleaner: SpeechCleaner?
 
     // MARK: - Text Insertion (Phase 5)
     // private var textInserter: TextInserter?
@@ -142,7 +142,7 @@ class AppState: ObservableObject {
         }
     }
 
-    // MARK: - Model Initialization (Phase 3)
+    // MARK: - Model Initialization (Phase 3 & 4)
     func initializeModels() async {
         statusText = "Loading models..."
         print("📦 AppState: Initializing models...")
@@ -155,9 +155,12 @@ class AppState: ObservableObject {
             currentModel = "distil-large-v3 (594MB)"
             print("✅ AppState: Whisper model loaded")
 
-            // TODO Phase 4: Initialize LLM
-            // speechCleaner = SpeechCleaner()
-            // try await speechCleaner?.initialize()
+            // Phase 4: Initialize LLM
+            speechCleaner = SpeechCleaner()
+            try await speechCleaner?.initialize()
+
+            currentModel = "Whisper + Qwen3-4B (~5.5GB)"
+            print("✅ AppState: LLM model loaded")
 
         } catch {
             LoquiLogger.shared.logError(error, context: "Model initialization")
@@ -191,17 +194,20 @@ class AppState: ObservableObject {
             }
             print("📝 Transcription: '\(rawText)'")
 
-            // TODO Phase 4: LLM cleanup (with fallback)
-            // var finalText = rawText
-            // if let cleanedText = try? await speechCleaner?.clean(rawText) {
-            //     finalText = cleanedText
-            // }
+            // Phase 4: LLM cleanup (with fallback to raw transcription)
+            var finalText = rawText
+            if let cleanedText = try? await speechCleaner?.clean(rawText) {
+                finalText = cleanedText
+                print("✨ LLM Cleaned: '\(rawText)' → '\(finalText)'")
+            } else {
+                print("⚠️  LLM cleanup failed, using raw transcription")
+            }
 
             // TODO Phase 5: Insert text
             // textInserter?.insertText(finalText)
 
-            // For Phase 3, just log the transcription
-            print("✅ AppState: Phase 3 complete - transcription: '\(rawText)'")
+            // For Phase 4, log the final text
+            print("✅ AppState: Phase 4 complete - final text: '\(finalText)'")
 
         } catch {
             LoquiLogger.shared.logError(error, context: "Recording processing")

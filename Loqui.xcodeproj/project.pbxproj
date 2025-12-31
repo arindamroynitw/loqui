@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		3206AD492F04DE3300587F16 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3206AD482F04DE3300587F16 /* WhisperKit */; };
+		3206AD502F04F37A00587F16 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = 3206AD4F2F04F37A00587F16 /* MLXLLM */; };
+		3206AD522F04F67A00587F16 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 3206AD512F04F67A00587F16 /* MLXLMCommon */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +29,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3206AD502F04F37A00587F16 /* MLXLLM in Frameworks */,
+				3206AD522F04F67A00587F16 /* MLXLMCommon in Frameworks */,
 				3206AD492F04DE3300587F16 /* WhisperKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -38,6 +42,7 @@
 			isa = PBXGroup;
 			children = (
 				3206AD0E2F04642B00587F16 /* Loqui */,
+				3206AD4E2F04F37A00587F16 /* Frameworks */,
 				3206AD0D2F04642B00587F16 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -48,6 +53,13 @@
 				3206AD0C2F04642B00587F16 /* Loqui.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		3206AD4E2F04F37A00587F16 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -71,6 +83,8 @@
 			name = Loqui;
 			packageProductDependencies = (
 				3206AD482F04DE3300587F16 /* WhisperKit */,
+				3206AD4F2F04F37A00587F16 /* MLXLLM */,
+				3206AD512F04F67A00587F16 /* MLXLMCommon */,
 			);
 			productName = Loqui;
 			productReference = 3206AD0C2F04642B00587F16 /* Loqui.app */;
@@ -102,6 +116,8 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				3206AD472F04DE3300587F16 /* XCRemoteSwiftPackageReference "WhisperKit" */,
+				3206AD4A2F04EEDD00587F16 /* XCRemoteSwiftPackageReference "mlx-swift" */,
+				3206AD4D2F04F07400587F16 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3206AD0D2F04642B00587F16 /* Products */;
@@ -275,7 +291,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arindamroy.Loqui;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -306,7 +322,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arindamroy.Loqui;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -348,6 +364,22 @@
 				kind = branch;
 			};
 		};
+		3206AD4A2F04EEDD00587F16 /* XCRemoteSwiftPackageReference "mlx-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ml-explore/mlx-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.29.1;
+			};
+		};
+		3206AD4D2F04F07400587F16 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ml-explore/mlx-swift-lm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.29.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -355,6 +387,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3206AD472F04DE3300587F16 /* XCRemoteSwiftPackageReference "WhisperKit" */;
 			productName = WhisperKit;
+		};
+		3206AD4F2F04F37A00587F16 /* MLXLLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3206AD4D2F04F07400587F16 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXLLM;
+		};
+		3206AD512F04F67A00587F16 /* MLXLMCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3206AD4D2F04F07400587F16 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXLMCommon;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
