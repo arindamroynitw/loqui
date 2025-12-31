@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3206AD492F04DE3300587F16 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3206AD482F04DE3300587F16 /* WhisperKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		3206AD0C2F04642B00587F16 /* Loqui.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Loqui.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3206AD492F04DE3300587F16 /* WhisperKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = Loqui;
 			packageProductDependencies = (
+				3206AD482F04DE3300587F16 /* WhisperKit */,
 			);
 			productName = Loqui;
 			productReference = 3206AD0C2F04642B00587F16 /* Loqui.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = 3206AD032F04642B00587F16;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				3206AD472F04DE3300587F16 /* XCRemoteSwiftPackageReference "WhisperKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3206AD0D2F04642B00587F16 /* Products */;
 			projectDirPath = "";
@@ -329,6 +338,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		3206AD472F04DE3300587F16 /* XCRemoteSwiftPackageReference "WhisperKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/argmaxinc/WhisperKit.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3206AD482F04DE3300587F16 /* WhisperKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3206AD472F04DE3300587F16 /* XCRemoteSwiftPackageReference "WhisperKit" */;
+			productName = WhisperKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 3206AD042F04642B00587F16 /* Project object */;
 }

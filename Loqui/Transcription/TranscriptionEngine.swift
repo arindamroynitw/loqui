@@ -6,20 +6,16 @@
 //
 
 import Foundation
-// WhisperKit will be imported once the dependency is added
-// import WhisperKit
+import WhisperKit
 
 /// Whisper-based transcription engine
 class TranscriptionEngine {
-    // TODO: Add WhisperKit dependency before uncommenting
-    // private var whisperKit: WhisperKit?
+    private var whisperKit: WhisperKit?
 
     /// Initialize the transcription engine with the specified model
     func initialize() async throws {
-        print("📦 TranscriptionEngine: Initializing...")
+        print("📦 TranscriptionEngine: Initializing WhisperKit...")
 
-        // TODO: Uncomment once WhisperKit is added
-        /*
         whisperKit = try await WhisperKit(
             WhisperKitConfig(
                 model: "distil-large-v3",
@@ -27,9 +23,8 @@ class TranscriptionEngine {
                 useBackgroundDownloadSession: false
             )
         )
-        */
 
-        print("✅ TranscriptionEngine: Initialized (stub for Phase 3)")
+        print("✅ TranscriptionEngine: WhisperKit initialized with distil-large-v3")
     }
 
     /// Transcribe audio data to text
@@ -38,8 +33,6 @@ class TranscriptionEngine {
     func transcribe(_ audioData: Data) async throws -> String {
         print("🎯 TranscriptionEngine: Transcribing \(audioData.count) bytes...")
 
-        // TODO: Uncomment once WhisperKit is added
-        /*
         guard let whisperKit = whisperKit else {
             throw TranscriptionError.notInitialized
         }
@@ -50,16 +43,18 @@ class TranscriptionEngine {
             return int16Ptr.map { Float($0) / 32768.0 }
         }
 
+        print("🎯 TranscriptionEngine: Converted to \(floatSamples.count) float samples")
+
         let options = DecodingOptions(
             task: .transcribe,
             language: "en",
             temperature: 0.0,  // Deterministic output
             usePrefillCache: true,  // Speed optimization
-            wordTimestamps: false,  // Not needed for text insertion
-            skipSpecialTokens: true
+            skipSpecialTokens: true,
+            wordTimestamps: false  // Not needed for text insertion
         )
 
-        // Create timeout task
+        // Create transcription task with timeout
         let transcriptionTask = Task {
             return try await whisperKit.transcribe(
                 audioArray: floatSamples,
@@ -73,14 +68,17 @@ class TranscriptionEngine {
         }
 
         do {
-            let result = try await transcriptionTask.value
+            let results = try await transcriptionTask.value
             timeoutTask.cancel()
 
-            guard let text = result?.text, !text.isEmpty else {
+            // Combine all transcription segments into final text
+            let combinedText = results.map { $0.text }.joined(separator: " ")
+
+            guard !combinedText.isEmpty else {
                 throw TranscriptionError.emptyResult
             }
 
-            let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmedText = combinedText.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
             print("✅ TranscriptionEngine: '\(trimmedText)'")
             return trimmedText
 
@@ -90,14 +88,5 @@ class TranscriptionEngine {
             }
             throw TranscriptionError.failed(error)
         }
-        */
-
-        // TEMPORARY: Stub for Phase 3 testing without WhisperKit
-        // Simulate transcription delay
-        try await Task.sleep(nanoseconds: 500_000_000)  // 0.5s
-
-        let stubText = "This is a test transcription from Phase 3"
-        print("✅ TranscriptionEngine: (Stub) '\(stubText)'")
-        return stubText
     }
 }
