@@ -29,9 +29,9 @@ struct MenuBarContentView: View {
 
             Divider()
 
-            // Settings button
-            Button("Settings...") {
-                openSettings()
+            // Settings link
+            SettingsLink {
+                Text("Settings...")
             }
             .keyboardShortcut(",", modifiers: .command)
 
@@ -49,13 +49,6 @@ struct MenuBarContentView: View {
             .keyboardShortcut("q", modifiers: .command)
         }
         .frame(width: 250)
-    }
-
-    private func openSettings() {
-        print("⚙️  Opening Settings...")
-
-        // Open the app's Settings window using standard macOS method
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 
     private func openAbout() {
