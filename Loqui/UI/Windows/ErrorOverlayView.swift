@@ -8,25 +8,31 @@
 import SwiftUI
 import AppKit
 
-/// Minimal error overlay for cleanup failures
+/// Minimal error overlay for cleanup failures (liquid glass design)
 struct ErrorOverlayView: View {
     @State private var isVisible = false
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 16))
+                .font(.system(size: 12))
                 .foregroundColor(.red)
 
             Text("Cleanup failed")
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.white)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color.black.opacity(0.85))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            VisualEffectView(
+                material: .popover,
+                blendingMode: .behindWindow,
+                state: .active
+            )
+        )
         .cornerRadius(8)
-        .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+        .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
         .opacity(isVisible ? 1 : 0)
         .onAppear {
             // Fade in
@@ -53,13 +59,13 @@ class ErrorOverlayController {
         // Create error overlay content
         let contentView = ErrorOverlayView()
 
-        // Create hosting view
+        // Create hosting view (smaller size for compact design)
         let hostingView = NSHostingView(rootView: contentView)
-        hostingView.frame = NSRect(x: 0, y: 0, width: 200, height: 40)
+        hostingView.frame = NSRect(x: 0, y: 0, width: 160, height: 32)
 
         // Create borderless window
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 200, height: 40),
+            contentRect: NSRect(x: 0, y: 0, width: 160, height: 32),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false

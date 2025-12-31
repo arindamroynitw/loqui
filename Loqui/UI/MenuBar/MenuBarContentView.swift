@@ -52,16 +52,32 @@ struct MenuBarContentView: View {
     }
 
     private func openAbout() {
-        // TODO Phase 5: Open About window
-        print("ℹ️  Opening About... (TODO)")
+        print("ℹ️  Opening About...")
 
-        // For now, show a simple alert
         let alert = NSAlert()
         alert.messageText = "Loqui"
-        alert.informativeText = "Personal Fast Speech-to-Text for macOS\n\nVersion 1.0 (Phase 1 Development)\n\n🔒 All processing happens on-device."
+        alert.informativeText = "Fast Speech-to-Text for macOS\n\nMade by Arindam Roy"
         alert.alertStyle = .informational
+
+        // Add social links as buttons
         alert.addButton(withTitle: "OK")
-        alert.runModal()
+        alert.addButton(withTitle: "X (Twitter)")
+        alert.addButton(withTitle: "LinkedIn")
+
+        let response = alert.runModal()
+
+        // Handle button clicks
+        if response == .alertSecondButtonReturn {
+            // X (Twitter) button clicked
+            if let url = URL(string: "https://x.com/crosschainyoda") {
+                NSWorkspace.shared.open(url)
+            }
+        } else if response == .alertThirdButtonReturn {
+            // LinkedIn button clicked
+            if let url = URL(string: "https://www.linkedin.com/in/arindamroynitw/") {
+                NSWorkspace.shared.open(url)
+            }
+        }
     }
 }
 
