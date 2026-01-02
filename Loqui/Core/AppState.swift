@@ -27,10 +27,14 @@ class AppState: ObservableObject {
     @Published var currentState: State = .idle
     @Published var statusText: String = "Idle"
     @Published var currentModel: String = "Not loaded"
+    @Published var modelsReady: Bool = false  // Track model initialization state
 
     // MARK: - Computed Properties
     var hasAPIKeys: Bool {
-        groqClient != nil || openaiClient != nil
+        // Check UserDefaults directly to avoid race condition with async initialization
+        let groqKey = UserDefaults.standard.string(forKey: "groqAPIKey") ?? ""
+        let openaiKey = UserDefaults.standard.string(forKey: "openaiAPIKey") ?? ""
+        return !groqKey.isEmpty || !openaiKey.isEmpty
     }
 
     // MARK: - Core Components
@@ -46,19 +50,27 @@ class AppState: ObservableObject {
     // MARK: - LLM (Phase 4 - Cloud API)
     private var groqClient: GroqClient?
     private var openaiClient: OpenAIClient?
-    private var errorOverlayController: ErrorOverlayController?
 
     // MARK: - Text Insertion (Phase 5)
     private var textInserter: TextInserter?
-    private var floater: FloaterWindowController?
+    private var hudController: HUDWindowController?
 
     // MARK: - Initialization
     private init() {
         print("🚀 AppState: Initializing...")
+        // Note: HUD is created lazily to avoid circular dependency
+        // (HUDViewModel observes AppState.shared, so can't create during init)
     }
 
     // MARK: - fn Key Monitoring
     func startKeyMonitoring() {
+        // Initialize HUD now (after AppState.shared initialization complete)
+        // This avoids circular dependency that would occur in init()
+        if hudController == nil {
+            hudController = HUDWindowController()
+            print("✅ AppState: HUD initialized")
+        }
+
         fnKeyMonitor = FnKeyMonitor()
         fnKeyMonitor?.start()
 
@@ -96,6 +108,13 @@ class AppState: ObservableObject {
         if !hasAPIKeys {
             print("⚠️  AppState: No API keys configured")
             showAPIKeyRequiredAlert()
+            return
+        }
+
+        // Check if models are ready (prevents 131s hang on first transcription)
+        if !modelsReady {
+            print("⚠️  AppState: Models not ready yet, showing loading HUD")
+            Task { await setHUDLoadingState() }
             return
         }
 
@@ -163,6 +182,9 @@ class AppState: ObservableObject {
         statusText = "Loading models..."
         print("📦 AppState: Initializing models...")
 
+        // Show HUD in loading state (visible to user during 131s model load)
+        await setHUDLoadingState()
+
         do {
             // Phase 3: Initialize Whisper
             transcriptionEngine = TranscriptionEngine()
@@ -196,21 +218,19 @@ class AppState: ObservableObject {
                 currentModel = "Whisper (No LLM - Configure API key in Settings)"
             }
 
+            // Mark models as ready
+            modelsReady = true
+            print("✅ AppState: All models loaded and ready")
+
         } catch {
             LoquiLogger.shared.logError(error, context: "Model initialization")
             print("❌ AppState: Model initialization failed: \(error)")
             currentModel = "Model load failed"
+            modelsReady = false  // Keep as not ready on failure
         }
 
-        // Initialize persistent floater (Siri-style animated UI)
-        floater = FloaterWindowController()
-        floater?.show()
-
-        // Set gray disabled state if no API keys configured
-        if !hasAPIKeys {
-            floater?.setDisabled()
-            print("⚠️  AppState: Floater set to disabled (gray) state - no API keys")
-        }
+        // Hide HUD after loading complete
+        await clearHUDLoadingState()
 
         statusText = "Idle"
     }
@@ -346,13 +366,8 @@ class AppState: ObservableObject {
                 // For now, just log the error
             }
 
-            // Show error overlay if cleanup failed (after text insertion completes)
-            if cleanupFailed {
-                Task { @MainActor in
-                    errorOverlayController = ErrorOverlayController()
-                    errorOverlayController?.show()
-                }
-            }
+            // Note: LLM cleanup failures are handled by HUD error state
+            // Raw transcription already inserted above, error shown in HUD for 2s
 
             let totalTime = Date().timeIntervalSince(pipelineStart)
             print("⏱️  ⏱️  ⏱️  TOTAL PIPELINE LATENCY: \(String(format: "%.2f", totalTime))s")
@@ -381,10 +396,29 @@ class AppState: ObservableObject {
         DispatchQueue.main.async {
             let alert = NSAlert()
             alert.messageText = "API Key Required"
-            alert.informativeText = "Please configure your Groq API key in Settings (Cmd+,) before using Loqui."
+            alert.informativeText = "Please configure your Groq or OpenAI API key in Settings (Cmd+,) before using Loqui."
             alert.alertStyle = .informational
             alert.addButton(withTitle: "OK")
             alert.runModal()
+        }
+    }
+
+    // MARK: - HUD Loading State Management
+    /// Show HUD in loading state (called during model initialization)
+    private func setHUDLoadingState() async {
+        await MainActor.run {
+            hudController?.setLoadingState()
+            hudController?.show()
+            print("✅ AppState: HUD set to loading state")
+        }
+    }
+
+    /// Clear HUD loading state and return to waiting (called after model initialization)
+    private func clearHUDLoadingState() async {
+        await MainActor.run {
+            // Don't hide - transition to waiting state (ambient presence)
+            hudController?.setWaitingState()
+            print("✅ AppState: HUD loading state cleared, returned to waiting")
         }
     }
 
