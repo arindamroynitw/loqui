@@ -10,6 +10,7 @@ import SwiftUI
 /// Content view for the menu bar dropdown
 struct MenuBarContentView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.openSettings) private var openSettingsAction
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -20,35 +21,53 @@ struct MenuBarContentView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
 
-            // Model info
-            Text("Model: \(appState.currentModel)")
-                .font(.system(.caption, design: .monospaced))
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
-
+            // Styled separator
             Divider()
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
 
-            // Settings link
-            SettingsLink {
-                Text("Settings...")
+            // Settings button
+            Button("Settings...") {
+                openSettings()
             }
             .keyboardShortcut(",", modifiers: .command)
+            .buttonStyle(.plain)
+            .padding(.leading, 12)
+            .padding(.vertical, 4)
 
             // About button
             Button("About Loqui") {
                 openAbout()
             }
+            .buttonStyle(.plain)
+            .padding(.leading, 12)
+            .padding(.vertical, 4)
 
+            // Styled separator
             Divider()
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
 
             // Quit button
             Button("Quit Loqui") {
                 NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("q", modifiers: .command)
+            .buttonStyle(.plain)
+            .padding(.leading, 12)
+            .padding(.vertical, 4)
         }
         .frame(width: 250)
+    }
+
+    private func openSettings() {
+        print("⚙️  Opening Settings...")
+
+        // Activate the app to bring it to foreground (like About dialog)
+        NSApp.activate(ignoringOtherApps: true)
+
+        // Open settings window using environment action
+        openSettingsAction()
     }
 
     private func openAbout() {

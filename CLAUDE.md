@@ -130,9 +130,22 @@ let text = results.map { $0.text }.joined(separator: " ")
 - Updates every 0.1s for smooth timer display
 
 **Menu Bar:**
-- `MenuBarIconView.swift` - State-based icon with symbol effects (requires macOS 14+)
+- `MenuBarIconView.swift` - Custom Flow logo (18pt) with state-based color changes
+  - Uses `Image("MenuBarIcon")` from Assets.xcassets (template rendering)
+  - Fixed size: `.frame(width: 18, height: 18)` prevents scaling issues
+  - Colors by state: gray (idle), red (recording), blue (processing), orange (error)
+  - Animations: `.pulse.byLayer` (recording, macOS 14+), `.rotate` (processing, macOS 15+)
+  - Fallback manual animations for older macOS versions
 - `MenuBarContentView.swift` - Dropdown menu (Status, Settings, About, Quit)
-- App uses `.accessory` activation policy (no Dock icon)
+  - Shows clean status only (no technical model names)
+  - `.buttonStyle(.plain)` removes default button borders
+  - Styled separators with `.padding(.horizontal, 8).padding(.vertical, 4)`
+  - Menu items have `.padding(.leading, 12).padding(.vertical, 4)` for spacing
+  - Settings uses `@Environment(\.openSettings)` with `NSApp.activate(ignoringOtherApps: true)` to appear in foreground
+- `Assets.xcassets/MenuBarIcon.imageset/` - 18pt Flow "L" logo
+  - PDF vector asset with "template" rendering intent (auto-adapts to light/dark mode)
+  - Preserves vector representation for all scales
+- App uses `.accessory` activation policy (no Dock icon, menu bar only)
 
 **Permission Wizard:**
 - `PermissionWizardView.swift` - First-launch setup flow
@@ -279,14 +292,22 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
 ## Symbol Effects & macOS Version Guards
 
-MenuBarIconView uses symbol effects (`.pulse`, `.variableColor`) which require macOS 14.0+:
+MenuBarIconView uses custom Flow logo with symbol effects applied via `EffectModifier`:
 ```swift
-if #available(macOS 14.0, *) {
-    Image(systemName: "mic.fill")
-        .symbolEffect(.pulse.byLayer, options: .repeating)
-} else {
-    Image(systemName: "mic.fill")  // Static fallback
-}
+// Custom image with state-based effects
+Image("MenuBarIcon")
+    .renderingMode(.template)
+    .resizable()
+    .aspectRatio(contentMode: .fit)
+    .frame(width: 18, height: 18)
+    .foregroundColor(colorForState)
+    .modifier(EffectModifier(state: state))
 ```
 
-**Note:** After removing MLX dependencies, deployment target can drop to macOS 13.0, but symbol effects will need availability guards.
+**EffectModifier implementation:**
+- `.pulse.byLayer` for recording (macOS 14+) with manual fallback (scale + opacity animation)
+- `.rotate` for processing (macOS 15+) with manual fallback (rotation animation)
+- Symbol effects work on custom images when applied as view modifiers
+- Fallback animations use `@State` variables with `.onAppear` triggers
+
+**Note:** Symbol effects (`.pulse`, `.rotate`) require macOS 14+/15+ respectively. The app includes manual animation fallbacks for older versions, maintaining visual consistency across macOS 13+.
