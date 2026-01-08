@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loqui - Fast Speech-to-Text for macOS</title>
+    <meta name="description" content="Press fn, speak, and get instant transcription. Fast, private speech-to-text for macOS with AI-powered cleanup.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0080ff;
+            --primary-light: #00a3d9;
+            --primary-dark: #0066cc;
+            --text-dark: #1a1a1a;
+            --text-light: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.85);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.18);
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: var(--text-light);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Animated background particles */
+        .bg-decoration {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .particle:nth-child(1) { left: 10%; top: 20%; animation-delay: 0s; animation-duration: 15s; }
+        .particle:nth-child(2) { left: 80%; top: 30%; animation-delay: 2s; animation-duration: 18s; }
+        .particle:nth-child(3) { left: 50%; top: 60%; animation-delay: 4s; animation-duration: 22s; }
+        .particle:nth-child(4) { left: 20%; top: 80%; animation-delay: 6s; animation-duration: 16s; }
+        .particle:nth-child(5) { left: 90%; top: 70%; animation-delay: 8s; animation-duration: 20s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+            50% { transform: translateY(-100px) translateX(50px); opacity: 0.8; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Hero Section */
+        header {
+            text-align: center;
+            padding: 80px 20px 60px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-container {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 32px;
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .logo-container svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 10px 40px rgba(0, 0, 0, 0.3));
+        }
+
+        h1 {
+            font-size: 72px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            font-size: 28px;
+            font-weight: 300;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+
+        .hero-description {
+            font-size: 20px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 24px;
+            line-height: 1.6;
+        }
+
+        .privacy-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-size: 15px;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 48px;
+        }
+
+        /* Download Section */
+        .download-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 48px;
+            margin: 0 auto 60px;
+            max-width: 700px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: #ffffff;
+            color: var(--primary);
+            padding: 20px 56px;
+            border-radius: 16px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: 2px solid transparent;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .download-btn:active {
+            transform: translateY(0px);
+        }
+
+        .version-info {
+            margin-top: 24px;
+            font-size: 15px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        /* Features Grid */
+        .features-section {
+            margin-bottom: 80px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 48px;
+            letter-spacing: -0.02em;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            padding: 32px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 36px;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .feature-card h3 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* How It Works */
+        .how-it-works {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 48px;
+            margin: 0 auto 60px;
+            max-width: 900px;
+            animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        .how-it-works h2 {
+            font-size: 36px;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .steps {
+            display: grid;
+            gap: 24px;
+        }
+
+        .step {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .step-content h3 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .step-content p {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        /* Setup Section */
+        .setup-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 48px;
+            margin: 0 auto 60px;
+            max-width: 900px;
+            animation: fadeInUp 0.8s ease-out 0.8s both;
+        }
+
+        .setup-section h2 {
+            font-size: 36px;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .setup-steps {
+            counter-reset: setup-counter;
+        }
+
+        .setup-step {
+            margin-bottom: 24px;
+            padding-left: 48px;
+            position: relative;
+            counter-increment: setup-counter;
+        }
+
+        .setup-step::before {
+            content: counter(setup-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .setup-step h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .setup-step p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .warning-box {
+            background: rgba(255, 152, 0, 0.15);
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 24px 0;
+        }
+
+        .warning-box h3 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .warning-box p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 60px 20px 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 80px;
+        }
+
+        .footer-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .author {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+
+        .author a {
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            transition: border-color 0.2s;
+        }
+
+        .author a:hover {
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .social-links {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            margin-bottom: 32px;
+        }
+
+        .social-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 15px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .social-links a:hover {
+            color: #ffffff;
+            transform: translateY(-2px);
+        }
+
+        .footer-links {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 24px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            margin: 0 12px;
+        }
+
+        .footer-links a:hover {
+            color: #ffffff;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 48px;
+            }
+
+            .tagline {
+                font-size: 20px;
+            }
+
+            .hero-description {
+                font-size: 18px;
+            }
+
+            .download-section, .how-it-works, .setup-section {
+                padding: 32px 24px;
+            }
+
+            .section-title {
+                font-size: 32px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .download-btn {
+                padding: 16px 40px;
+                font-size: 18px;
+            }
+        }
+
+        /* Subtle entrance animations */
+        @media (prefers-reduced-motion: no-preference) {
+            .feature-card {
+                animation: fadeInUp 0.6s ease-out both;
+            }
+            .feature-card:nth-child(1) { animation-delay: 0.5s; }
+            .feature-card:nth-child(2) { animation-delay: 0.6s; }
+            .feature-card:nth-child(3) { animation-delay: 0.7s; }
+            .feature-card:nth-child(4) { animation-delay: 0.8s; }
+            .feature-card:nth-child(5) { animation-delay: 0.9s; }
+            .feature-card:nth-child(6) { animation-delay: 1.0s; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-decoration">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="logo-container">
+                <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M 50 30 Q 60 30, 70 45 T 90 80 T 90 130"
+                          stroke="url(#gradient1)" stroke-width="14" stroke-linecap="round" fill="none"/>
+                    <path d="M 90 130 Q 100 130, 110 130 T 160 130"
+                          stroke="url(#gradient2)" stroke-width="14" stroke-linecap="round" fill="none"/>
+                    <path d="M 60 55 Q 70 55, 80 70 T 100 115"
+                          stroke="url(#gradient3)" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.6"/>
+                    <defs>
+                        <linearGradient id="gradient1" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.8" />
+                            <stop offset="100%" style="stop-color:#ffffff;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.8" />
+                        </linearGradient>
+                        <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.8" />
+                            <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.5" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+
+            <h1>Loqui</h1>
+            <p class="tagline">Fast Speech-to-Text for macOS</p>
+            <p class="hero-description">
+                Press fn, speak, and get instant transcription. Your voice becomes clean, intelligent text in seconds.
+            </p>
+            <div class="privacy-badge">
+                🔒 Private • No data stored or sent
+            </div>
+        </header>
+
+        <div class="download-section">
+            <a href="https://github.com/arindamroynitw/loqui/releases/download/v1.0/Loqui-v1.0.dmg" class="download-btn">
+                <span>⬇</span> Download Loqui
+            </a>
+            <p class="version-info">
+                Version 1.0 • macOS 14+ • Apple Silicon & Intel • Free
+            </p>
+        </div>
+
+        <section class="features-section">
+            <h2 class="section-title">Why Loqui?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">⚡</span>
+                    <h3>Blazing Fast</h3>
+                    <p>3.5 seconds from voice to text. WhisperKit transcription with AI-powered cleanup via Groq/OpenAI.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🔒</span>
+                    <h3>Privacy First</h3>
+                    <p>Transcription happens on your Mac. No audio leaves your device. No data collection, ever.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🎯</span>
+                    <h3>Works Everywhere</h3>
+                    <p>Insert text into any app. Email, Slack, Notes, code editors—if it accepts text, Loqui works.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🧠</span>
+                    <h3>AI Cleanup</h3>
+                    <p>Removes "um", "uh", and filler words. Fixes grammar. Resolves self-corrections. Clean output, every time.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🎤</span>
+                    <h3>One Key</h3>
+                    <p>Hold fn to record, release to transcribe. No clicking, no windows. Pure flow.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">💎</span>
+                    <h3>Native macOS</h3>
+                    <p>Built with SwiftUI. Menu bar app. Respects system appearance. Feels like it belongs.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="how-it-works">
+            <h2>How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Press & Hold fn</h3>
+                        <p>See the timer HUD appear. Audio is captured in real-time.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Speak Naturally</h3>
+                        <p>No need to be perfect. Loqui cleans up fillers and mistakes.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Release fn</h3>
+                        <p>Whisper transcribes on-device. AI cleanup happens via cloud API.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Text Appears</h3>
+                        <p>Clean, formatted text automatically inserted where you're typing.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="setup-section">
+            <h2>Setup in 3 Minutes</h2>
+
+            <div class="setup-steps">
+                <div class="setup-step">
+                    <h3>Download & Install</h3>
+                    <p>Download Loqui-v1.0.dmg and drag to Applications folder.</p>
+                </div>
+
+                <div class="setup-step">
+                    <h3>First Launch</h3>
+                    <p>Right-click Loqui.app → Open → Open (to bypass security warning, app is unsigned)</p>
+                </div>
+
+                <div class="setup-step">
+                    <h3>Grant Permissions</h3>
+                    <p>When prompted, allow Microphone, Input Monitoring, and Accessibility access.</p>
+                </div>
+
+                <div class="setup-step">
+                    <h3>Add API Key</h3>
+                    <p>Menu bar → Settings → Add Groq API key (free at console.groq.com) or OpenAI key.</p>
+                </div>
+
+                <div class="setup-step">
+                    <h3>Start Talking</h3>
+                    <p>Press fn anywhere, speak, release. Your text appears instantly.</p>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h3><span>⚠️</span> Security Warning</h3>
+                <p>
+                    This app is unsigned. macOS will show a warning on first launch.
+                    <strong>Right-click → Open</strong> to bypass.
+                    Alternative: System Settings → Privacy & Security → "Loqui was blocked" → Open Anyway.
+                </p>
+            </div>
+        </section>
+
+        <footer>
+            <div class="footer-content">
+                <p class="author">
+                    Made by <a href="https://x.com/crosschainyoda">Arindam Roy</a>
+                </p>
+                <div class="social-links">
+                    <a href="https://x.com/crosschainyoda">
+                        <span>𝕏</span> Twitter
+                    </a>
+                    <a href="https://www.linkedin.com/in/arindamroynitw/">
+                        <span>in</span> LinkedIn
+                    </a>
+                    <a href="https://github.com/arindamroynitw/loqui">
+                        <span>⌘</span> GitHub
+                    </a>
+                </div>
+                <div class="footer-links">
+                    <a href="https://github.com/arindamroynitw/loqui/blob/main/LICENSE">License</a>
+                    <span>•</span>
+                    <a href="https://github.com/arindamroynitw/loqui/issues">Support</a>
+                    <span>•</span>
+                    <a href="https://github.com/arindamroynitw/loqui">Source Code</a>
+                </div>
+                <p style="margin-top: 24px; font-size: 13px; opacity: 0.6;">
+                    © 2026 Arindam Roy • Proprietary License
+                </p>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
