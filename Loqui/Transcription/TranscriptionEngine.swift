@@ -14,6 +14,7 @@ class TranscriptionEngine {
 
     /// Initialize the transcription engine with the specified model
     func initialize() async throws {
+        print("📍 INIT CHECKPOINT: TranscriptionEngine.initialize() - START")
         print("📦 TranscriptionEngine: Initializing WhisperKit...")
 
         whisperKit = try await WhisperKit(
@@ -24,6 +25,7 @@ class TranscriptionEngine {
             )
         )
 
+        print("📍 INIT CHECKPOINT: TranscriptionEngine - WhisperKit initialized")
         print("✅ TranscriptionEngine: WhisperKit initialized with distil-large-v3")
 
         // Pre-load the model by transcribing 0.1s of silence

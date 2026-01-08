@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import AVFoundation
 
 /// Central state machine for the Loqui app
 /// This orchestrates the entire speech-to-text pipeline
@@ -63,7 +64,7 @@ class AppState: ObservableObject {
     }
 
     // MARK: - fn Key Monitoring
-    func startKeyMonitoring() {
+    func startKeyMonitoring() -> Result<Void, FnKeyMonitorError> {
         // Initialize HUD now (after AppState.shared initialization complete)
         // This avoids circular dependency that would occur in init()
         if hudController == nil {
@@ -72,7 +73,13 @@ class AppState: ObservableObject {
         }
 
         fnKeyMonitor = FnKeyMonitor()
-        fnKeyMonitor?.start()
+        let result = fnKeyMonitor?.start() ?? .failure(.eventTapCreationFailed)
+
+        // Only set up notification observers if monitoring started successfully
+        guard case .success = result else {
+            print("❌ AppState: fn key monitoring failed to start")
+            return result
+        }
 
         // Listen for fn key press events
         NotificationCenter.default.addObserver(
@@ -93,6 +100,7 @@ class AppState: ObservableObject {
         }
 
         print("✅ AppState: fn key monitoring started")
+        return .success(())
     }
 
     // MARK: - Recording Control
@@ -101,6 +109,27 @@ class AppState: ObservableObject {
         guard case .idle = currentState else {
             print("⚠️  AppState: Cannot start recording - currently \(currentState)")
             // TODO: Show notification "Still processing previous transcription"
+            return
+        }
+
+        // Check microphone permission first
+        let micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+        if micStatus != .authorized {
+            print("🎤 AppState: Microphone permission not granted, requesting...")
+
+            // Request microphone permission
+            AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        print("✅ AppState: Microphone permission granted")
+                        // Retry recording now that we have permission
+                        self?.startRecording()
+                    } else {
+                        print("❌ AppState: Microphone permission denied")
+                        self?.showMicrophonePermissionAlert()
+                    }
+                }
+            }
             return
         }
 
@@ -400,6 +429,27 @@ class AppState: ObservableObject {
             alert.alertStyle = .informational
             alert.addButton(withTitle: "OK")
             alert.runModal()
+        }
+    }
+
+    private func showMicrophonePermissionAlert() {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "Microphone Permission Required"
+            alert.informativeText = "Loqui needs microphone access to transcribe your speech. Please enable it in System Settings > Privacy & Security > Microphone."
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "Open System Settings")
+            alert.addButton(withTitle: "Cancel")
+
+            NSApp.activate(ignoringOtherApps: true)
+            let response = alert.runModal()
+
+            if response == .alertFirstButtonReturn {
+                // Open System Settings to Microphone pane
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
         }
     }
 

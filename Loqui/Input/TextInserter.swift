@@ -20,9 +20,17 @@ class TextInserter {
         print("📝 TextInserter: Inserting '\(text)'")
 
         // Check if we have Accessibility permission
-        guard AXIsProcessTrusted() else {
-            print("❌ TextInserter: Accessibility permission not granted")
-            throw TextInserterError.accessibilityPermissionDenied
+        if !AXIsProcessTrusted() {
+            print("🔐 TextInserter: Accessibility permission not granted, requesting...")
+
+            // Request permission (opens System Settings)
+            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
+            let granted = AXIsProcessTrustedWithOptions(options)
+
+            if !granted {
+                print("❌ TextInserter: Accessibility permission denied")
+                throw TextInserterError.accessibilityPermissionDenied
+            }
         }
 
         // Save current clipboard contents for restoration (optional - we skip this for simplicity)

@@ -17,14 +17,19 @@ class LoquiLogger {
     private let logFile: URL
 
     private init() {
+        print("📍 INIT CHECKPOINT: LoquiLogger.init() - BEFORE directory creation")
+
         // Set up log directory: ~/Library/Application Support/Loqui/logs/
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         logDirectory = appSupport.appendingPathComponent("Loqui/logs", isDirectory: true)
         logFile = logDirectory.appendingPathComponent("loqui.log")
 
+        print("📍 INIT CHECKPOINT: LoquiLogger - About to create directory at: \(logDirectory.path)")
+
         // Create directory if needed
         try? FileManager.default.createDirectory(at: logDirectory, withIntermediateDirectories: true)
 
+        print("📍 INIT CHECKPOINT: LoquiLogger - AFTER directory creation")
         print("📁 LoquiLogger: Log file at \(logFile.path)")
     }
 

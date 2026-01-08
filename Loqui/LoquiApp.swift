@@ -11,8 +11,6 @@ import SwiftUI
 struct LoquiApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var appState = AppState.shared
-    @StateObject private var permissionManager = PermissionManager()
-    @State private var showPermissionWizard = false
 
     var body: some Scene {
         // Menu bar icon with dropdown
@@ -29,11 +27,22 @@ struct LoquiApp: App {
             SettingsView()
         }
 
-        // Permission wizard window
-        Window("Loqui Setup", id: "permission-wizard") {
-            PermissionWizardView()
+        // About window
+        Window("About Loqui", id: "about-window") {
+            AboutWindow()
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 400, height: 480)
+
+        // Permissions window
+        Window("Manage Permissions", id: "permissions-window") {
+            PermissionsView()
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 480, height: 320)
     }
 }

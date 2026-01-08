@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Loqui - Fast Speech-to-Text for macOS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0080ff 0%, #00a3d9 100%);
+            color: #ffffff;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        .tagline {
+            font-size: 20px;
+            opacity: 0.9;
+            margin-bottom: 40px;
+        }
+
+        .download-section {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .download-btn {
+            display: inline-block;
+            background: #ffffff;
+            color: #0080ff;
+            padding: 16px 48px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 18px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .version-info {
+            margin-top: 20px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .content-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        h2 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 12px;
+        }
+
+        h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+
+        p {
+            margin-bottom: 16px;
+            opacity: 0.95;
+        }
+
+        ul, ol {
+            margin-left: 24px;
+            margin-bottom: 16px;
+        }
+
+        li {
+            margin-bottom: 8px;
+            opacity: 0.95;
+        }
+
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            background: none;
+            padding: 0;
+        }
+
+        .warning {
+            background: rgba(255, 152, 0, 0.2);
+            border-left: 4px solid #ff9800;
+            padding: 16px;
+            border-radius: 4px;
+            margin: 16px 0;
+        }
+
+        .info {
+            background: rgba(33, 150, 243, 0.2);
+            border-left: 4px solid #2196f3;
+            padding: 16px;
+            border-radius: 4px;
+            margin: 16px 0;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .feature-card h4 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            opacity: 0.8;
+        }
+
+        .social-links {
+            margin-top: 20px;
+        }
+
+        .social-links a {
+            color: #ffffff;
+            text-decoration: none;
+            margin: 0 12px;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+        }
+
+        .social-links a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 36px;
+            }
+
+            .tagline {
+                font-size: 18px;
+            }
+
+            .download-section {
+                padding: 24px;
+            }
+
+            .content-section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">L</div>
+            <h1>Loqui</h1>
+            <p class="tagline">Fast Speech-to-Text for macOS</p>
+        </header>
+
+        <div class="download-section">
+            <a href="https://github.com/arindamroynitw/loqui/releases/download/v1.0/Loqui-v1.0.dmg" class="download-btn">
+                ⬇️ Download Loqui v1.0
+            </a>
+            <p class="version-info">
+                Version 1.0 | macOS 14.6+ | Apple Silicon & Intel
+            </p>
+        </div>
+
+        <div class="content-section">
+            <h2>System Requirements</h2>
+            <ul>
+                <li><strong>Operating System:</strong> macOS 14.6 (Sonoma) or later</li>
+                <li><strong>Processor:</strong> Apple Silicon (M1/M2/M3/M4) or Intel</li>
+                <li><strong>Memory:</strong> 8 GB RAM minimum</li>
+                <li><strong>Storage:</strong> ~6 GB for models (downloaded on first launch)</li>
+                <li><strong>Permissions:</strong> Microphone, Accessibility, Input Monitoring</li>
+            </ul>
+        </div>
+
+        <div class="content-section">
+            <h2>Installation</h2>
+            <ol>
+                <li>Download the <code>Loqui-v1.0.dmg</code> file above</li>
+                <li>Open the downloaded DMG file</li>
+                <li>Drag <strong>Loqui.app</strong> to your <strong>Applications</strong> folder</li>
+                <li>Launch Loqui from Applications</li>
+            </ol>
+
+            <div class="warning">
+                <h3>⚠️ Security Warning (First Launch)</h3>
+                <p>This app is currently <strong>unsigned</strong>. macOS will show a security warning on first launch.</p>
+                <p><strong>To open the app:</strong></p>
+                <ol>
+                    <li>Right-click (or Control-click) on <strong>Loqui.app</strong></li>
+                    <li>Select <strong>"Open"</strong> from the menu</li>
+                    <li>Click <strong>"Open"</strong> in the security dialog</li>
+                </ol>
+                <p><em>Alternatively:</em> Go to System Settings → Privacy & Security → scroll down to find "Loqui was blocked" → Click "Open Anyway"</p>
+            </div>
+
+            <div class="info">
+                <h3>📋 Permission Setup</h3>
+                <p>On first launch, Loqui will guide you through granting three required permissions:</p>
+                <ul>
+                    <li><strong>Microphone:</strong> To record your voice for transcription</li>
+                    <li><strong>Accessibility:</strong> To insert transcribed text into applications</li>
+                    <li><strong>Input Monitoring:</strong> To detect fn key presses</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>How to Use</h2>
+            <ol>
+                <li>Look for the Loqui icon in your menu bar (top-right)</li>
+                <li><strong>Press and hold</strong> the <code>fn</code> key to start recording</li>
+                <li>Speak your message</li>
+                <li><strong>Release</strong> the <code>fn</code> key to stop recording</li>
+                <li>Loqui will transcribe your speech and automatically insert the text into your active application</li>
+            </ol>
+            <p>The HUD timer shows your recording duration. Transcription happens on-device using WhisperKit, with AI cleanup via cloud APIs (Groq/OpenAI).</p>
+        </div>
+
+        <div class="content-section">
+            <h2>Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h4>🎤 Instant Recording</h4>
+                    <p>Press fn key to record anywhere in macOS</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🧠 On-Device Transcription</h4>
+                    <p>WhisperKit distil-large-v3 model (~3s latency)</p>
+                </div>
+                <div class="feature-card">
+                    <h4>✨ AI Cleanup</h4>
+                    <p>Groq/OpenAI removes fillers and fixes grammar</p>
+                </div>
+                <div class="feature-card">
+                    <h4>⚡ Universal Insertion</h4>
+                    <p>Works in any text field across all apps</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔒 Privacy-Focused</h4>
+                    <p>Transcription happens on your device</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🎨 Native macOS UI</h4>
+                    <p>SwiftUI-based menu bar app with HUD</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>Configuration</h2>
+            <p>Click the Loqui menu bar icon → <strong>Settings</strong> to configure:</p>
+            <ul>
+                <li><strong>Groq API Key:</strong> For Llama 3.1 70B cleanup (free tier: 30 req/min)</li>
+                <li><strong>OpenAI API Key:</strong> Fallback for GPT-4o-mini (when Groq unavailable)</li>
+            </ul>
+            <p>Get API keys:</p>
+            <ul>
+                <li>Groq: <a href="https://console.groq.com" style="color: #ffffff; text-decoration: underline;">console.groq.com</a></li>
+                <li>OpenAI: <a href="https://platform.openai.com/api-keys" style="color: #ffffff; text-decoration: underline;">platform.openai.com/api-keys</a></li>
+            </ul>
+        </div>
+
+        <div class="content-section">
+            <h2>Build from Source</h2>
+            <p>For developers who want to build Loqui from source:</p>
+            <div class="code-block">
+                <code># Clone repository<br>
+git clone https://github.com/arindamroynitw/loqui.git<br>
+cd loqui<br>
+<br>
+# Open in Xcode<br>
+open Loqui.xcodeproj<br>
+<br>
+# Build (Cmd+B) and Run (Cmd+R)<br>
+# Or build from command line:<br>
+xcodebuild -project Loqui.xcodeproj -scheme Loqui -configuration Release build</code>
+            </div>
+            <p><strong>Requirements:</strong> Xcode 16+, macOS 14.6+ SDK</p>
+            <p>See <a href="https://github.com/arindamroynitw/loqui#readme" style="color: #ffffff; text-decoration: underline;">README</a> for detailed build instructions.</p>
+        </div>
+
+        <div class="content-section">
+            <h2>Performance</h2>
+            <ul>
+                <li><strong>Whisper Transcription:</strong> ~3 seconds</li>
+                <li><strong>LLM Cleanup (Groq):</strong> ~0.3 seconds</li>
+                <li><strong>LLM Cleanup (OpenAI):</strong> ~0.5 seconds</li>
+                <li><strong>Total Pipeline:</strong> ~3.5 seconds (fn release → text insertion)</li>
+            </ul>
+            <p>Performance varies based on audio length and network latency for LLM cleanup.</p>
+        </div>
+
+        <div class="content-section">
+            <h2>Known Issues</h2>
+            <ul>
+                <li>App is unsigned (security warning expected on first launch)</li>
+                <li>No Mac App Store distribution (requires non-sandboxed permissions)</li>
+                <li>Clipboard is overwritten and not restored after text insertion</li>
+                <li>First launch downloads ~6 GB of models (Whisper: 594 MB, Qwen: ~5 GB - note: Qwen will be removed in v1.1)</li>
+            </ul>
+        </div>
+
+        <div class="content-section">
+            <h2>Troubleshooting</h2>
+            <h3>App won't open</h3>
+            <p>Follow the security workaround steps above (right-click → Open).</p>
+
+            <h3>Permissions denied</h3>
+            <p>Go to System Settings → Privacy & Security → check Microphone, Accessibility, and Input Monitoring tabs. Ensure Loqui is enabled.</p>
+
+            <h3>Transcription fails</h3>
+            <p>Check that you've configured at least one API key (Groq or OpenAI) in Settings. Verify your API keys are valid.</p>
+
+            <h3>View logs</h3>
+            <div class="code-block">
+                <code>tail -f ~/Library/Application\ Support/Loqui/logs/loqui.log</code>
+            </div>
+        </div>
+
+        <footer>
+            <p><strong>Loqui</strong> is made by <a href="https://x.com/crosschainyoda" style="color: #ffffff; font-weight: 600;">Arindam Roy</a></p>
+            <div class="social-links">
+                <a href="https://x.com/crosschainyoda">Twitter/X</a>
+                <a href="https://www.linkedin.com/in/arindamroynitw/">LinkedIn</a>
+                <a href="https://github.com/arindamroynitw/loqui">GitHub</a>
+            </div>
+            <p style="margin-top: 24px; font-size: 14px;">
+                Licensed under <a href="https://github.com/arindamroynitw/loqui/blob/main/LICENSE" style="color: #ffffff;">Proprietary License</a> |
+                Copyright © 2026 Arindam Roy
+            </p>
+            <p style="font-size: 13px; margin-top: 12px; opacity: 0.7;">
+                Uses <a href="https://github.com/argmaxinc/WhisperKit" style="color: #ffffff;">WhisperKit</a> (MIT) |
+                <a href="https://github.com/IBM/plex" style="color: #ffffff;">IBM Plex Sans</a> (OFL)
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

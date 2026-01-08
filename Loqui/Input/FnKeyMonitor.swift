@@ -8,6 +8,21 @@
 import Cocoa
 import CoreGraphics
 
+/// Errors that can occur during fn key monitoring
+enum FnKeyMonitorError: Error, LocalizedError {
+    case permissionDenied
+    case eventTapCreationFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .permissionDenied:
+            return "Input Monitoring permission not granted. Please enable in System Settings."
+        case .eventTapCreationFailed:
+            return "Failed to create event tap for fn key monitoring. Please restart the app."
+        }
+    }
+}
+
 /// Monitors the fn key globally using CGEventTap
 class FnKeyMonitor {
     private var eventTap: CFMachPort?
@@ -15,12 +30,13 @@ class FnKeyMonitor {
 
     /// Start monitoring the fn key
     /// Requires Input Monitoring permission
-    func start() {
+    /// - Returns: Result indicating success or failure with specific error
+    func start() -> Result<Void, FnKeyMonitorError> {
         // Check if we have Input Monitoring permission
         guard CGPreflightListenEventAccess() else {
-            print("⚠️ FnKeyMonitor: Input Monitoring permission not granted. Requesting...")
-            CGRequestListenEventAccess()
-            return
+            print("⚠️ FnKeyMonitor: Input Monitoring permission not granted")
+            CGRequestListenEventAccess()  // Open System Settings for user
+            return .failure(.permissionDenied)
         }
 
         print("✅ FnKeyMonitor: Input Monitoring permission granted")
@@ -38,7 +54,7 @@ class FnKeyMonitor {
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         ) else {
             print("❌ FnKeyMonitor: Failed to create event tap")
-            return
+            return .failure(.eventTapCreationFailed)
         }
 
         self.eventTap = tap
@@ -49,6 +65,7 @@ class FnKeyMonitor {
         CGEvent.tapEnable(tap: tap, enable: true)
 
         print("✅ FnKeyMonitor: Started monitoring fn key")
+        return .success(())
     }
 
     /// Stop monitoring the fn key

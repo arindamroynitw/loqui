@@ -27,9 +27,12 @@ class WhisperAudioCapture {
 
     /// Start capturing audio from the microphone
     func startCapture() throws {
+        print("📍 INIT CHECKPOINT: WhisperAudioCapture.startCapture() - BEFORE accessing inputNode")
+
         let inputNode = audioEngine.inputNode
         let inputFormat = inputNode.inputFormat(forBus: 0)
 
+        print("📍 INIT CHECKPOINT: WhisperAudioCapture - AFTER accessing inputNode")
         print("🎤 Audio Input Format: \(inputFormat.sampleRate)Hz, \(inputFormat.channelCount) channels")
         print("🎯 Whisper Target Format: 16000Hz, 1 channel, Int16")
 

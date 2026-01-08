@@ -12,6 +12,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var appState: AppState?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        print("📍 INIT CHECKPOINT: AppDelegate.applicationDidFinishLaunching()")
+
         // Set as accessory app - no Dock icon, menu bar only
         NSApp.setActivationPolicy(.accessory)
         print("✅ AppDelegate: Set activation policy to .accessory (no Dock icon)")
@@ -20,10 +22,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         appState = AppState.shared
         print("✅ AppDelegate: AppState initialized")
 
-        // Start fn key monitoring
-        appState?.startKeyMonitoring()
+        // Start fn key monitoring (will request Input Monitoring if needed)
+        print("📍 INIT CHECKPOINT: AppDelegate starting key monitoring")
+        let result = appState?.startKeyMonitoring()
 
-        // Phase 3: Initialize models in background
+        switch result {
+        case .success:
+            print("✅ AppDelegate: fn key monitoring started successfully")
+        case .failure(let error):
+            print("⚠️ AppDelegate: fn key monitoring needs permission: \(error.localizedDescription)")
+            // Permission will be requested when user presses fn for the first time
+        case .none:
+            print("⚠️ AppDelegate: appState is nil, cannot start monitoring")
+        }
+
+        // Initialize models in background
+        print("📍 INIT CHECKPOINT: AppDelegate starting model initialization")
         Task {
             await appState?.initializeModels()
         }

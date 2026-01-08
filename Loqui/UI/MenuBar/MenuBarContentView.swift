@@ -11,6 +11,7 @@ import SwiftUI
 struct MenuBarContentView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.openSettings) private var openSettingsAction
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -25,6 +26,14 @@ struct MenuBarContentView: View {
             Divider()
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
+
+            // Manage Permissions button
+            Button("Manage Permissions") {
+                openPermissions()
+            }
+            .buttonStyle(.plain)
+            .padding(.leading, 12)
+            .padding(.vertical, 4)
 
             // Settings button
             Button("Settings...") {
@@ -71,32 +80,15 @@ struct MenuBarContentView: View {
     }
 
     private func openAbout() {
-        print("ℹ️  Opening About...")
+        print("ℹ️  Opening About window...")
+        NSApp.activate(ignoringOtherApps: true)
+        openWindow(id: "about-window")
+    }
 
-        let alert = NSAlert()
-        alert.messageText = "Loqui"
-        alert.informativeText = "Fast Speech-to-Text for macOS\n\nMade by Arindam Roy"
-        alert.alertStyle = .informational
-
-        // Add social links as buttons
-        alert.addButton(withTitle: "OK")
-        alert.addButton(withTitle: "X (Twitter)")
-        alert.addButton(withTitle: "LinkedIn")
-
-        let response = alert.runModal()
-
-        // Handle button clicks
-        if response == .alertSecondButtonReturn {
-            // X (Twitter) button clicked
-            if let url = URL(string: "https://x.com/crosschainyoda") {
-                NSWorkspace.shared.open(url)
-            }
-        } else if response == .alertThirdButtonReturn {
-            // LinkedIn button clicked
-            if let url = URL(string: "https://www.linkedin.com/in/arindamroynitw/") {
-                NSWorkspace.shared.open(url)
-            }
-        }
+    private func openPermissions() {
+        print("🔐 Opening Manage Permissions...")
+        NSApp.activate(ignoringOtherApps: true)
+        openWindow(id: "permissions-window")
     }
 }
 
