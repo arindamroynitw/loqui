@@ -29,10 +29,9 @@ The app requires three macOS permissions (requested at runtime):
 3. **Accessibility** - Text insertion via simulated Cmd+V
 
 ### Dependencies (Swift Package Manager)
-- **WhisperKit** (`argmaxinc/WhisperKit`) - On-device speech recognition (distil-large-v3 model)
-- **mlx-swift** + **mlx-swift-lm** - On-device LLM (Qwen3-4B-4bit) - **PENDING REMOVAL** per `latency_improvements_spec.md`
+- **WhisperKit** (`argmaxinc/WhisperKit`) - On-device speech recognition (distil-large-v3 model, 594MB)
 
-**Note:** The project is transitioning from on-device LLM to cloud-based APIs (Groq + OpenAI). See `latency_improvements_spec.md` for migration plan.
+**Note:** Cloud-based LLM cleanup uses Groq API (Llama 3.1 70B) as primary and OpenAI API (GPT-4o-mini) as fallback via direct HTTP requests (no SDK dependencies).
 
 ## Architecture
 
@@ -66,7 +65,8 @@ fn key release → stopRecording()
 - `fnKeyMonitor` - Global fn key detection
 - `audioCapture` - AVAudioEngine wrapper (48kHz → 16kHz mono PCM)
 - `transcriptionEngine` - WhisperKit wrapper
-- `speechCleaner` - LLM cleanup (to be replaced)
+- `groqClient` - Primary LLM cleanup (Llama 3.1 70B, ~300ms)
+- `openaiClient` - Fallback LLM cleanup (GPT-4o-mini, ~500ms)
 - `textInserter` - Clipboard + keyboard event simulation
 - `hudWindow` - Floating timer display
 
@@ -99,18 +99,28 @@ let results = try await whisperKit.transcribe(...)
 let text = results.map { $0.text }.joined(separator: " ")
 ```
 
-### LLM Cleanup (Current - To Be Replaced)
+### LLM Cleanup (Cloud API)
 
-**SpeechCleaner.swift:**
-- Uses Qwen3-4B-4bit via MLXLLM ChatSession API
-- **Problem:** 20-40s latency (85-93% of total pipeline time)
-- Output includes `<think>` tags - must parse and extract text after `</think>`
+**GroqClient.swift:**
+- Primary provider using Groq API
+- Model: Llama 3.1 70B Versatile
+- Latency: ~300ms average
+- System prompt optimized for transcription cleanup
+- Removes fillers ("um", "uh", "like"), fixes grammar, resolves self-corrections
+- Direct HTTP requests via URLSession
 
-**Replacement Plan (See `latency_improvements_spec.md`):**
-- Primary: Groq API (Llama 3.1 70B, ~300ms)
-- Fallback: OpenAI GPT-4o-mini (~500ms)
-- Smart routing with failure tracking
-- Target: <1s cleanup latency
+**OpenAIClient.swift:**
+- Fallback provider using OpenAI API
+- Model: GPT-4o-mini
+- Latency: ~500ms average
+- Identical system prompt to Groq for consistency
+- Used when Groq fails or API key not configured
+
+**LLM Routing Logic (in AppState.swift):**
+1. Try Groq first if API key configured
+2. On Groq failure, automatically fallback to OpenAI
+3. If both fail or no API keys, return raw Whisper output
+4. No retry logic - fail fast and fallback immediately
 
 ### Text Insertion
 
@@ -189,21 +199,24 @@ let text = results.map { $0.text }.joined(separator: " ")
 ⏱️  [0.00s] VAD complete (0.00s)
 ⏱️  [0.00s] Whisper transcription started
 ⏱️  [3.10s] Whisper complete (3.10s)
-⏱️  [3.10s] LLM cleanup started
-⏱️  [22.78s] LLM complete (19.68s) ← BOTTLENECK
-⏱️  [22.80s] Text insertion complete (0.02s)
-⏱️  ⏱️  ⏱️  TOTAL PIPELINE LATENCY: 22.80s
+⏱️  [3.10s] LLM cleanup started (Groq)
+⏱️  [3.38s] LLM complete (0.28s)
+⏱️  [3.40s] Text insertion complete (0.02s)
+⏱️  ⏱️  ⏱️  TOTAL PIPELINE LATENCY: 3.40s
 ```
 
-**Current Performance:**
+**Current Performance (v1.0 with Cloud APIs):**
 - VAD: <0.01s
-- Whisper: ~3s (acceptable)
-- LLM: 20-40s (unacceptable - being replaced)
+- Whisper: ~3.0s (on-device transcription)
+- LLM (Groq): ~0.3s (cloud API)
+- LLM (OpenAI fallback): ~0.5s (cloud API)
 - Text insertion: <0.1s
+- **Total**: ~3.5s average
 
-**Target Performance (After Cloud Migration):**
-- Total: ~3.5s
-- Breakdown: Whisper 3s + Groq 0.3s + overhead 0.2s
+**Performance Improvement:**
+- Before (on-device Qwen3-4B): 23-43s total
+- After (cloud APIs): ~3.5s total
+- **Reduction: 85-92%** (20-40s → 0.3-0.5s for LLM stage)
 
 ## Non-Sandboxed Architecture
 
@@ -267,20 +280,24 @@ Testing Results:
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 ```
 
-## Next Steps (Per latency_improvements_spec.md)
+## On-Demand Permission System (v1.0)
 
-**Immediate Priority:** Replace on-device LLM with cloud APIs
+**Simplified Approach:** Permissions requested when needed, no wizard UI
 
-**Implementation Order:**
-1. Create `LLM/GroqClient.swift` - Groq API integration
-2. Create `LLM/OpenAIClient.swift` - Fallback provider
-3. Create `LLM/LLMRouter.swift` - Smart routing with failure tracking
-4. Remove `SpeechCleaner.swift` and all MLX dependencies
-5. Update Settings UI for API key configuration
-6. Add error overlay for cleanup failures
-7. Downgrade deployment target to macOS 13.0
+**Permission Flow:**
+1. **App Launch** - Starts fn key monitoring (may show Input Monitoring system prompt)
+2. **First fn key press** - Requests Microphone permission if not granted
+3. **Text insertion** - Requests Accessibility permission if not granted
 
-**Expected Outcome:** 85-92% latency reduction (23-43s → 3.5s)
+**Implementation:**
+- `AppState.startRecording()` - Checks and requests microphone via `AVCaptureDevice.requestAccess`
+- `TextInserter.insertText()` - Checks and requests accessibility via `AXIsProcessTrustedWithOptions`
+- `FnKeyMonitor.start()` - Input Monitoring requested automatically via `CGRequestListenEventAccess`
+
+**Manage Permissions Window:**
+- Menu bar → "Manage Permissions" - Simple window with buttons to open System Settings
+- 3 permission rows: Microphone, Input Monitoring, Accessibility
+- Each row has "Open Settings" button - no status checking, no validation
 
 ## State Machine Constraints
 
