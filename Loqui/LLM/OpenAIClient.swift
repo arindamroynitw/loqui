@@ -13,7 +13,7 @@ class OpenAIClient {
     // MARK: - Properties
     private let apiKey: String
     private let endpoint = "https://api.openai.com/v1/chat/completions"
-    private let timeout: TimeInterval = 5.0
+    private let timeout: TimeInterval = 15.0  // Increased from 5s for consistency
     private let model = "gpt-4o-mini"
 
     // Fixed cleanup prompt (same as Groq for consistency)
@@ -38,6 +38,50 @@ class OpenAIClient {
     }
 
     // MARK: - Public API
+
+    /// Generic LLM completion with custom prompt
+    /// - Parameter prompt: The prompt to send to the LLM
+    /// - Returns: LLM response text
+    /// - Throws: LLMError on failure
+    func complete(prompt: String) async throws -> String {
+        print("🔷 OpenAIClient: Completing prompt (\(prompt.prefix(50))...)")
+
+        // Build request with custom prompt
+        let request = try makeCustomRequest(prompt: prompt)
+
+        // Execute with timeout
+        do {
+            let (data, response) = try await executeWithTimeout(request)
+
+            // Validate HTTP response
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw LLMError.invalidResponse
+            }
+
+            guard httpResponse.statusCode == 200 else {
+                throw mapHTTPError(statusCode: httpResponse.statusCode, data: data)
+            }
+
+            // Decode response
+            let openaiResponse = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+
+            guard let responseText = openaiResponse.choices.first?.message.content,
+                  !responseText.isEmpty else {
+                throw LLMError.emptyResponse
+            }
+
+            print("✅ OpenAIClient: Completion received (\(responseText.count) chars)")
+            return responseText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        } catch let error as LLMError {
+            print("❌ OpenAIClient: \(error.localizedDescription)")
+            throw error
+        } catch {
+            print("❌ OpenAIClient: Unexpected error: \(error)")
+            throw LLMError.networkError(error)
+        }
+    }
+
     /// Clean transcript using OpenAI API
     /// - Parameter rawText: Raw transcription from Whisper
     /// - Returns: Cleaned text
@@ -103,6 +147,31 @@ class OpenAIClient {
             ],
             "temperature": 0.3,
             "max_tokens": 100
+        ]
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        return request
+    }
+
+    private func makeCustomRequest(prompt: String) throws -> URLRequest {
+        guard let url = URL(string: endpoint) else {
+            throw LLMError.invalidConfiguration
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = timeout
+
+        // Build request body with custom prompt
+        let body: [String: Any] = [
+            "model": model,
+            "messages": [
+                ["role": "user", "content": prompt]
+            ],
+            "temperature": 0.3,
+            "max_tokens": 200  // Higher limit for command processing
         ]
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)

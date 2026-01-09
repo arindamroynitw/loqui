@@ -8,6 +8,23 @@
 import Foundation
 import WhisperKit
 
+// MARK: - Pause Detection Structures
+
+/// Type of pause detected in transcription
+public enum PauseType {
+    case sentence   // 1-3 seconds
+    case paragraph  // 3+ seconds
+}
+
+/// Hint for pause-based formatting
+public struct PauseHint {
+    let position: Int           // Character position in transcript
+    let type: PauseType        // Type of pause
+    let duration: TimeInterval // Duration in seconds
+}
+
+// MARK: - Transcription Engine
+
 /// Whisper-based transcription engine
 class TranscriptionEngine {
     private var whisperKit: WhisperKit?
@@ -68,7 +85,7 @@ class TranscriptionEngine {
             temperature: 0.0,  // Deterministic output
             usePrefillCache: true,  // Speed optimization
             skipSpecialTokens: true,
-            wordTimestamps: false  // Not needed for text insertion
+            wordTimestamps: false  // Not needed - simplified approach
         )
 
         // Create transcription task with timeout
