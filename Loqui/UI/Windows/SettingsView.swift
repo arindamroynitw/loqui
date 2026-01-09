@@ -19,11 +19,17 @@ struct SettingsView: View {
                 }
                 .tag(0)
 
+            VocabularySettingsView()
+                .tabItem {
+                    Label("Vocabulary", systemImage: "book.closed")
+                }
+                .tag(1)
+
             LLMSettingsView()
                 .tabItem {
                     Label("LLM API", systemImage: "brain")
                 }
-                .tag(1)
+                .tag(2)
         }
         .frame(width: 500, height: 450)
     }

@@ -13,7 +13,7 @@ class GroqClient {
     // MARK: - Properties
     private let apiKey: String
     private let endpoint = "https://api.groq.com/openai/v1/chat/completions"
-    private let timeout: TimeInterval = 5.0
+    private let timeout: TimeInterval = 15.0  // Increased from 5s - free tier can be slower
     private let model = "llama-3.3-70b-versatile"
 
     // Fixed cleanup prompt (from spec)
@@ -38,6 +38,50 @@ class GroqClient {
     }
 
     // MARK: - Public API
+
+    /// Generic LLM completion with custom prompt
+    /// - Parameter prompt: The prompt to send to the LLM
+    /// - Returns: LLM response text
+    /// - Throws: LLMError on failure
+    func complete(prompt: String) async throws -> String {
+        print("🌐 GroqClient: Completing prompt (\(prompt.prefix(50))...)")
+
+        // Build request with custom prompt
+        let request = try makeCustomRequest(prompt: prompt)
+
+        // Execute with timeout
+        do {
+            let (data, response) = try await executeWithTimeout(request)
+
+            // Validate HTTP response
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw LLMError.invalidResponse
+            }
+
+            guard httpResponse.statusCode == 200 else {
+                throw mapHTTPError(statusCode: httpResponse.statusCode, data: data)
+            }
+
+            // Decode response
+            let groqResponse = try JSONDecoder().decode(GroqResponse.self, from: data)
+
+            guard let responseText = groqResponse.choices.first?.message.content,
+                  !responseText.isEmpty else {
+                throw LLMError.emptyResponse
+            }
+
+            print("✅ GroqClient: Completion received (\(responseText.count) chars)")
+            return responseText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        } catch let error as LLMError {
+            print("❌ GroqClient: \(error.localizedDescription)")
+            throw error
+        } catch {
+            print("❌ GroqClient: Unexpected error: \(error)")
+            throw LLMError.networkError(error)
+        }
+    }
+
     /// Clean transcript using Groq API
     /// - Parameter rawText: Raw transcription from Whisper
     /// - Returns: Cleaned text
@@ -103,6 +147,32 @@ class GroqClient {
             ],
             "temperature": 0.3,
             "max_tokens": 100,
+            "top_p": 1.0
+        ]
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        return request
+    }
+
+    private func makeCustomRequest(prompt: String) throws -> URLRequest {
+        guard let url = URL(string: endpoint) else {
+            throw LLMError.invalidConfiguration
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = timeout
+
+        // Build request body with custom prompt
+        let body: [String: Any] = [
+            "model": model,
+            "messages": [
+                ["role": "user", "content": prompt]
+            ],
+            "temperature": 0.3,
+            "max_tokens": 200,  // Higher limit for command processing
             "top_p": 1.0
         ]
 
